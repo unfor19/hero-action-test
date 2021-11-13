@@ -1,9 +1,5 @@
 name: test-action
 
-env:
-  DOCKER_REPO: "unfor19/hero-action"
-  HERO_ACTION: "status-update"
-
 on:
   workflow_dispatch:
     inputs:
@@ -23,6 +19,7 @@ jobs:
     name: Dummy Test
     steps:
       - uses: actions/checkout@v2
+      # Add steps to test your action ...
     outputs:
       target_job_status: ${{ job.status }}
 
@@ -30,7 +27,7 @@ jobs:
     name: Update Status Check In Source Repository
     runs-on: ubuntu-20.04
     needs:
-      - test
+      - test # Change if necessary
     if: ${{ always() }}
     env:
       HERO_SRC_REPOSITORY: ${{ github.event.inputs.src_repository }}
@@ -41,14 +38,15 @@ jobs:
       - name: Set Environment Variables
         run: |
           echo "HERO_TARGET_RUN_ID=${GITHUB_RUN_ID}" >> $GITHUB_ENV
-      - name: Test Hero
+          echo "HERO_TARGET_REPOSITORY=${GITHUB_REPOSITORY}" >> $GITHUB_ENV
+      - name: Status Update
         uses: unfor19/hero-action@master
         with:
-          action: ${{ env.HERO_ACTION }}
+          action: "status-update"
           gh_token: ${{ secrets.GH_TOKEN }}
           src_repository: ${{ env.HERO_SRC_REPOSITORY }}
           src_workflow_name: ${{ env.HERO_SRC_WORKFLOW_NAME }}
           src_sha: ${{ env.HERO_SRC_SHA }}
-          target_repository: ${{ env.HERO_SRC_REPOSITORY }}-test
+          target_repository: ${{ env.HERO_TARGET_REPOSITORY }}
           target_job_status: ${{ env.HERO_TARGET_JOB_STATUS }}
           target_run_id: ${{ env.HERO_TARGET_RUN_ID }}
