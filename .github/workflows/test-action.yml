@@ -1,0 +1,51 @@
+name: test-action
+
+on:
+  workflow_dispatch:
+    inputs:
+      src_repository:
+        description: Source Repository - {owner}/{repo_name}
+        required: true
+      src_workflow_name:
+        description: Source Workflow Name
+        required: true
+      src_sha:
+        description: Source Repository SHA - GITHUB_SHA
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    name: Test Action
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test Hero
+        uses: unfor19/hero-action@master
+    outputs:
+      test_job_status: ${{ job.status }}
+
+  # update-status-check:
+  #   name: Update Status Check In Source Repository
+  #   runs-on: ubuntu-20.04
+  #   needs:
+  #     - test
+  #   if: ${{ always() }}
+  #   env:
+  #     SRC_REPOSITORY: ${{ github.event.inputs.src_repository }}
+  #     SRC_WORKFLOW_NAME: ${{ github.event.inputs.src_workflow_name }}
+  #     SRC_SHA: ${{ github.event.inputs.src_sha }}
+  #     GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  #     TEST_JOB_STATUS: ${{ needs.test.outputs.test_job_status }}
+  #   steps:
+  #     - name: Update Source Repository Status Check
+  #       run: |
+  #         _STATE=""
+  #         if [[ "$TEST_JOB_STATUS" = "success" ]]; then
+  #           _STATE="success"
+  #         else
+  #           _STATE="failed"
+  #         fi
+  #         curl --fail -X POST -H "Accept: application/vnd.github.v3+json" \
+  #           -H "Authorization: Bearer ${GH_TOKEN}" \
+  #           "https://api.github.com/repos/${SRC_REPOSITORY}/statuses/${SRC_SHA}" \
+  #           -d '{"state":"'${_STATE}'", "context": "test-action", "description": "Status update for '"${SRC_REPOSITORY}"'", "target_url": "https://github.com/'${GITHUB_REPOSITORY}'/actions/runs/'"${GITHUB_RUN_ID}"'"}'
