@@ -51,4 +51,4 @@ jobs:
           src_sha: ${{ env.HERO_SRC_SHA }}
           target_repository: ${{ env.HERO_SRC_REPOSITORY }}-test
           target_job_status: ${{ env.HERO_TARGET_JOB_STATUS }}
-          target_run_id: ${{ env.TARGET_RUN_ID }}
+          target_run_id: ${{ env.HERO_TARGET_RUN_ID }}
