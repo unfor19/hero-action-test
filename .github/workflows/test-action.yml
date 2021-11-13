@@ -1,5 +1,9 @@
 name: test-action
 
+env:
+  DOCKER_REPO: "unfor19/hero-action"
+  HERO_ACTION: "status-update"
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,36 +20,35 @@ on:
 jobs:
   test:
     runs-on: ubuntu-20.04
-    name: Test Action
+    name: Dummy Test
     steps:
       - uses: actions/checkout@v2
+    outputs:
+      target_job_status: ${{ job.status }}
+
+  update-status-check:
+    name: Update Status Check In Source Repository
+    runs-on: ubuntu-20.04
+    needs:
+      - test
+    if: ${{ always() }}
+    env:
+      HERO_SRC_REPOSITORY: ${{ github.event.inputs.src_repository }}
+      HERO_SRC_WORKFLOW_NAME: ${{ github.event.inputs.src_workflow_name }}
+      HERO_SRC_SHA: ${{ github.event.inputs.src_sha }}
+      HERO_TARGET_JOB_STATUS: ${{ needs.test.outputs.target_job_status }}
+    steps:
+      - name: Set Environment Variables
+        run: |
+          echo "HERO_TARGET_RUN_ID=${GITHUB_RUN_ID}" >> $GITHUB_ENV
       - name: Test Hero
         uses: unfor19/hero-action@master
-    outputs:
-      test_job_status: ${{ job.status }}
-
-  # update-status-check:
-  #   name: Update Status Check In Source Repository
-  #   runs-on: ubuntu-20.04
-  #   needs:
-  #     - test
-  #   if: ${{ always() }}
-  #   env:
-  #     SRC_REPOSITORY: ${{ github.event.inputs.src_repository }}
-  #     SRC_WORKFLOW_NAME: ${{ github.event.inputs.src_workflow_name }}
-  #     SRC_SHA: ${{ github.event.inputs.src_sha }}
-  #     GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  #     TEST_JOB_STATUS: ${{ needs.test.outputs.test_job_status }}
-  #   steps:
-  #     - name: Update Source Repository Status Check
-  #       run: |
-  #         _STATE=""
-  #         if [[ "$TEST_JOB_STATUS" = "success" ]]; then
-  #           _STATE="success"
-  #         else
-  #           _STATE="failed"
-  #         fi
-  #         curl --fail -X POST -H "Accept: application/vnd.github.v3+json" \
-  #           -H "Authorization: Bearer ${GH_TOKEN}" \
-  #           "https://api.github.com/repos/${SRC_REPOSITORY}/statuses/${SRC_SHA}" \
-  #           -d '{"state":"'${_STATE}'", "context": "test-action", "description": "Status update for '"${SRC_REPOSITORY}"'", "target_url": "https://github.com/'${GITHUB_REPOSITORY}'/actions/runs/'"${GITHUB_RUN_ID}"'"}'
+        with:
+          action: ${{ env.HERO_ACTION }}
+          gh_token: ${{ secrets.GH_TOKEN }}
+          src_repository: ${{ env.HERO_SRC_REPOSITORY }}
+          src_workflow_name: ${{ env.HERO_SRC_WORKFLOW_NAME }}
+          src_sha: ${{ env.HERO_SRC_SHA }}
+          target_repository: ${{ env.HERO_SRC_REPOSITORY }}-test
+          target_job_status: ${{ env.HERO_TARGET_JOB_STATUS }}
+          target_run_id: ${{ env.TARGET_RUN_ID }}
