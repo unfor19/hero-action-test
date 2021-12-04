@@ -16,10 +16,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-20.04
-    name: Dummy Test
+    name: Add steps to test your action
     steps:
       - uses: actions/checkout@v2
-      # Add steps to test your action ...
+      # - name: Your Action
+      #   continue-on-error: true # Allow failure, a status update will be sent to source repo
+      #   uses: repo_owner/repo_name@repo_branch
+      #   with:
+      #     input1: some_input
+      #     input2: another_input
     outputs:
       target_job_status: ${{ job.status }}
 
@@ -29,24 +34,15 @@ jobs:
     needs:
       - test # Change if necessary
     if: ${{ always() }}
-    env:
-      HERO_SRC_REPOSITORY: ${{ github.event.inputs.src_repository }}
-      HERO_SRC_WORKFLOW_NAME: ${{ github.event.inputs.src_workflow_name }}
-      HERO_SRC_SHA: ${{ github.event.inputs.src_sha }}
-      HERO_TARGET_JOB_STATUS: ${{ needs.test.outputs.target_job_status }}
     steps:
-      - name: Set Environment Variables
-        run: |
-          echo "HERO_TARGET_RUN_ID=${GITHUB_RUN_ID}" >> $GITHUB_ENV
-          echo "HERO_TARGET_REPOSITORY=${GITHUB_REPOSITORY}" >> $GITHUB_ENV
-      - name: Status Update
+      - name: Status Update Action Repo
         uses: unfor19/hero-action@master
         with:
           action: "status-update"
-          gh_token: ${{ secrets.GH_TOKEN }}
-          src_repository: ${{ env.HERO_SRC_REPOSITORY }}
-          src_workflow_name: ${{ env.HERO_SRC_WORKFLOW_NAME }}
-          src_sha: ${{ env.HERO_SRC_SHA }}
-          target_repository: ${{ env.HERO_TARGET_REPOSITORY }}
-          target_job_status: ${{ env.HERO_TARGET_JOB_STATUS }}
-          target_run_id: ${{ env.HERO_TARGET_RUN_ID }}
+          gh_token: ${{ secrets.GH_TOKEN }} # scope: repo + workflow
+          src_repository: ${{ github.event.inputs.src_repository }}
+          src_workflow_name: ${{ github.event.inputs.src_workflow_name }}
+          src_sha: ${{ github.event.inputs.src_sha }}
+          target_repository: ${{ github.repository }}
+          target_job_status: ${{ needs.test.outputs.target_job_status }}
+          target_run_id: ${{ github.run_id }}
